@@ -1,0 +1,125 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-heading: 'Outfit', system-ui, sans-serif;
+  
+  --color-bg-light: #f8fafc;
+  --color-card-light: #ffffff;
+  --color-border-light: #e2e8f0;
+  
+  --color-bg-dark: #0b0f19;
+  --color-card-dark: #131b2e;
+  --color-border-dark: #1e293b;
+  
+  --color-accent-purple: #8b5cf6;
+  --color-accent-cyan: #06b6d4;
+  --color-accent-indigo: #6366f1;
+  --color-accent-emerald: #10b981;
+}
+
+@layer base {
+  body {
+    @apply font-sans bg-bg-light text-slate-800 dark:bg-bg-dark dark:text-slate-100 transition-colors duration-300;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-semibold text-slate-900 dark:text-white;
+  }
+}
+
+/* Custom Scrollbar for Sleek Aesthetics */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 dark:bg-slate-700 rounded-full hover:bg-slate-400 dark:hover:bg-slate-600 transition-colors;
+}
+
+/* Glassmorphism Card Style */
+.glass-panel {
+  @apply bg-white/70 dark:bg-card-dark/70 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/50 shadow-lg;
+}
+
+.glass-panel-interactive {
+  @apply bg-white/70 dark:bg-card-dark/70 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/50 shadow-lg hover:bg-white/90 dark:hover:bg-card-dark/80 hover:border-accent-indigo/30 dark:hover:border-accent-indigo/30 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5;
+}
+
+/* Voice Interview Animations */
+@keyframes voice-wave {
+  0%, 100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.voice-bar {
+  animation: voice-wave 1.2s ease-in-out infinite;
+}
+
+.voice-bar:nth-child(2) { animation-delay: 0.15s; }
+.voice-bar:nth-child(3) { animation-delay: 0.3s; }
+.voice-bar:nth-child(4) { animation-delay: 0.45s; }
+.voice-bar:nth-child(5) { animation-delay: 0.6s; }
+.voice-bar:nth-child(6) { animation-delay: 0.75s; }
+.voice-bar:nth-child(7) { animation-delay: 0.9s; }
+.voice-bar:nth-child(8) { animation-delay: 1.05s; }
+
+/* Breathing/Pulsing Animation for AI Avatar */
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 25px 10px rgba(99, 102, 241, 0.2);
+  }
+}
+
+.avatar-active {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+/* Pulse animation for Speech Recognition indicator */
+@keyframes record-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.9);
+  }
+}
+
+.record-indicator {
+  animation: record-pulse 1.5s ease-in-out infinite;
+}
+
+/* Floating Animation for Landing Page Background */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(5deg);
+  }
+}
+
+.float-bg {
+  animation: float 8s ease-in-out infinite;
+}
+
+.float-bg-reverse {
+  animation: float 10s ease-in-out infinite reverse;
+}

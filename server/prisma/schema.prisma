@@ -1,0 +1,327 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum NotificationType {
+  PRACTICE_REMINDER
+  INTERVIEW_REMINDER
+  LEARNING_REMINDER
+  WEEKLY_REPORT
+  ACHIEVEMENT
+}
+
+model User {
+  id          String   @id @default(cuid())
+  fullName    String
+  email       String   @unique
+  password    String
+  profilePic  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  resumes     Resume[]
+  jobDescriptions JobDescription[]
+  interviews  InterviewSession[]
+  analytics   Analytics?
+  settings    Settings?
+  notifications Notification[]
+}
+
+model Resume {
+  id         String           @id @default(cuid())
+  title      String
+  fileUrl    String
+  publicId   String
+  parsedText String           @db.Text
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analysis   ResumeAnalysis?
+  matches    JobDescriptionMatch[]
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@index([userId])
+}
+
+model ResumeAnalysis {
+  id                String   @id @default(cuid())
+  resumeId          String   @unique
+  resume            Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  modelName         String?
+  resumeScore       Int
+  atsScore          Int
+  strengths         Json
+  weaknesses        Json
+  missingSkills     Json
+  grammarIssues     Json
+  formattingIssues  Json
+  improvementTips   Json
+  suggestedProjects Json
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model JobDescription {
+  id             String                 @id @default(cuid())
+  title          String
+  company        String
+  description    String                 @db.Text
+  requiredSkills  Json
+  userId         String
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matches        JobDescriptionMatch[]
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@index([userId])
+}
+
+model JobDescriptionMatch {
+  id                   String         @id @default(cuid())
+  jobDescriptionId     String
+  resumeId             String
+  jobDescription       JobDescription @relation(fields: [jobDescriptionId], references: [id], onDelete: Cascade)
+  resume               Resume         @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  modelName            String?
+  matchPercent         Int
+  missingSkills        Json
+  missingKeywords      Json
+  resumeImprovements   Json
+  likelyInterviewTopics Json
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  @@index([jobDescriptionId])
+  @@index([resumeId])
+}
+
+model InterviewSession {
+  id                    String             @id @default(cuid())
+  userId                String
+  user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role                  String
+  experience            String
+  difficulty            String
+  language              String
+  interviewType         String
+  duration              String
+  introduction          String             @db.Text
+  interviewStrategy     String             @db.Text
+  difficultyProgression Json
+  currentQuestion       String?
+  askedQuestions        Json
+  remainingQuestions    Json
+  conversationMemory    Json
+  currentTopic          String?
+  difficultyLevel       String
+  status                String
+  questions             InterviewQuestion[]
+  answers               InterviewAnswer[]
+  transcripts           Transcript[]
+  recordings            Recording[]
+  feedbacks             Feedback[]
+  stats                 InterviewStats?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([userId])
+}
+
+model InterviewQuestion {
+  id               String            @id @default(cuid())
+  interviewSessionId String
+  interviewSession  InterviewSession  @relation(fields: [interviewSessionId], references: [id], onDelete: Cascade)
+  order            Int
+  topic            String?
+  difficultyLevel  String?
+  question         String            @db.Text
+  isCurrent        Boolean           @default(false)
+  askedAt          DateTime?
+  answers          InterviewAnswer[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([interviewSessionId])
+}
+
+model InterviewAnswer {
+  id                String           @id @default(cuid())
+  interviewSessionId String
+  interviewSession   InterviewSession @relation(fields: [interviewSessionId], references: [id], onDelete: Cascade)
+  interviewQuestionId String?
+  interviewQuestion  InterviewQuestion? @relation(fields: [interviewQuestionId], references: [id], onDelete: SetNull)
+  answer            String           @db.Text
+  feedback          String?          @db.Text
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([interviewSessionId])
+  @@index([interviewQuestionId])
+}
+
+model Transcript {
+  id                 String           @id @default(cuid())
+  interviewSessionId String
+  interviewSession   InterviewSession @relation(fields: [interviewSessionId], references: [id], onDelete: Cascade)
+  speaker            String
+  turnType           String
+  sequence           Int
+  content            String           @db.Text
+  transcriptText     String?          @db.Text
+  topic              String?
+  difficultyLevel    String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([interviewSessionId])
+}
+
+model Recording {
+  id                 String           @id @default(cuid())
+  interviewSessionId String
+  interviewSession   InterviewSession @relation(fields: [interviewSessionId], references: [id], onDelete: Cascade)
+  sequence           Int
+  kind               String
+  fileUrl            String
+  publicId           String
+  mimeType           String?
+  durationSeconds    Float?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([interviewSessionId])
+}
+
+model Feedback {
+  id                 String           @id @default(cuid())
+  interviewSessionId String
+  interviewSession   InterviewSession @relation(fields: [interviewSessionId], references: [id], onDelete: Cascade)
+  sequence           Int
+  modelName          String?
+  score              Int
+  strengths          Json
+  weaknesses         Json
+  improvementTips    Json
+  followUpQuestion   String?          @db.Text
+  currentTopic       String?
+  difficultyLevel    String?
+  conversationSummary String           @db.Text
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([interviewSessionId])
+}
+
+model Analytics {
+  id                        String            @id @default(cuid())
+  userId                    String            @unique
+  user                      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totalInterviews           Int               @default(0)
+  averageScore              Float             @default(0)
+  hoursPracticed            Float             @default(0)
+  currentStreak             Int               @default(0)
+  averageTechnicalScore     Float             @default(0)
+  averageCommunicationScore Float             @default(0)
+  mostImprovedSkill         String?
+  weakestSkill              String?
+  latestFeedback            String?           @db.Text
+  upcomingLearningGoals     Json
+  interviewStats            InterviewStats[]
+  topicPerformance          TopicPerformance[]
+  weeklyProgress            WeeklyProgress[]
+  createdAt                 DateTime          @default(now())
+  updatedAt                 DateTime          @updatedAt
+}
+
+model Settings {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  preferredLanguage     String   @default("English")
+  preferredAiVoice      String   @default("default")
+  theme                 String   @default("system")
+  interviewDuration     Int      @default(30)
+  notificationPreferences Json
+  dailyGoal             Int      @default(1)
+  weeklyGoal            Int      @default(5)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model Notification {
+  id          String            @id @default(cuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        NotificationType
+  title       String
+  message     String            @db.Text
+  metadata    Json?
+  isRead      Boolean           @default(false)
+  readAt      DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+model InterviewStats {
+  id                 String           @id @default(cuid())
+  analyticsId        String
+  interviewSessionId String           @unique
+  analytics          Analytics        @relation(fields: [analyticsId], references: [id], onDelete: Cascade)
+  interviewSession   InterviewSession @relation(fields: [interviewSessionId], references: [id], onDelete: Cascade)
+  score              Int
+  technicalScore     Float
+  communicationScore Float
+  practiceHours      Float
+  feedbackSummary    String?          @db.Text
+  strengths          Json
+  weaknesses         Json
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([analyticsId])
+}
+
+model TopicPerformance {
+  id              String    @id @default(cuid())
+  analyticsId     String
+  analytics       Analytics @relation(fields: [analyticsId], references: [id], onDelete: Cascade)
+  topic           String
+  interviewCount  Int       @default(0)
+  averageScore    Float     @default(0)
+  accuracy        Float     @default(0)
+  growth          Float     @default(0)
+  lastPracticedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([analyticsId, topic])
+  @@index([analyticsId])
+}
+
+model WeeklyProgress {
+  id                  String    @id @default(cuid())
+  analyticsId         String
+  analytics           Analytics @relation(fields: [analyticsId], references: [id], onDelete: Cascade)
+  weekStart           DateTime
+  weekEnd             DateTime
+  interviewsCompleted Int       @default(0)
+  averageScore        Float     @default(0)
+  technicalScore      Float     @default(0)
+  communicationScore  Float     @default(0)
+  practiceHours       Float     @default(0)
+  trend               Float     @default(0)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@unique([analyticsId, weekStart])
+  @@index([analyticsId])
+}
