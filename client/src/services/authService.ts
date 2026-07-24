@@ -17,11 +17,11 @@ export interface ApiResponse<T> {
 }
 
 export const authService = {
-  register: async (payload: any): Promise<ApiResponse<{ user: User }>> => {
+  register: async (payload: any): Promise<ApiResponse<{ user: User; token: string }>> => {
     return apiClient.post("/auth/register", payload);
   },
 
-  login: async (payload: any): Promise<ApiResponse<{ user: User }>> => {
+  login: async (payload: any): Promise<ApiResponse<{ user: User; token: string }>> => {
     return apiClient.post("/auth/login", payload);
   },
 

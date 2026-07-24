@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { authService } from "../services/authService";
 import type { User } from "../services/authService";
+import { tokenStorage } from "../services/tokenStorage";
 import { useNotification } from "./NotificationContext";
 
 interface AuthContextType {
@@ -20,15 +21,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { showToast } = useNotification();
 
   const refreshUser = useCallback(async () => {
+    // Only call /auth/me when a token is actually stored — avoids an
+    // unconditional 401 on first load when the user is not logged in.
+    if (!tokenStorage.get()) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await authService.getCurrentUser();
       if (response.success && response.data?.user) {
         setUser(response.data.user);
       } else {
         setUser(null);
+        tokenStorage.clear();
       }
     } catch (error) {
       setUser(null);
+      tokenStorage.clear();
     } finally {
       setLoading(false);
     }
@@ -38,11 +49,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshUser();
   }, [refreshUser]);
 
+  // Listen for the global 401 event dispatched by the Axios response interceptor.
+  // This handles token expiry or invalidation in any API call, not just auth calls.
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setUser(null);
+      setLoading(false);
+    };
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("auth:unauthorized", handleUnauthorized);
+  }, []);
+
   const login = async (payload: any) => {
     setLoading(true);
     try {
       const response = await authService.login(payload);
       if (response.success && response.data?.user) {
+        // Save the JWT so every subsequent request can attach it.
+        if (response.data.token) {
+          tokenStorage.set(response.data.token);
+        }
         setUser(response.data.user);
         showToast("Success", "Welcome back to AI Interview Platform!", "success");
       }
@@ -60,6 +86,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await authService.register(payload);
       if (response.success && response.data?.user) {
+        // Save the JWT returned on registration too.
+        if (response.data.token) {
+          tokenStorage.set(response.data.token);
+        }
         setUser(response.data.user);
         showToast("Registration Successful", "Your account has been created!", "success");
       }
@@ -76,14 +106,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       await authService.logout();
-      setUser(null);
-      showToast("Logged Out", "You have been securely logged out.", "success");
-    } catch (error: any) {
-      // In case of cookie issues, clear user local state anyway
-      setUser(null);
-      showToast("Logged Out", "Session ended.", "success");
+    } catch {
+      // Best-effort — proceed with local cleanup even if the server call fails.
     } finally {
+      tokenStorage.clear();
+      setUser(null);
       setLoading(false);
+      showToast("Logged Out", "You have been securely logged out.", "success");
     }
   };
 

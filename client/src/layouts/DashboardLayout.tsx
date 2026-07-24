@@ -37,10 +37,15 @@ export const DashboardLayout: React.FC = () => {
   };
 
   useEffect(() => {
+    // Only fetch notifications once we have a confirmed authenticated user.
+    // Firing before auth is ready causes 401 "Missing token" errors.
+    if (!user) return;
+
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 60000); // Polling every minute
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
+
 
   const handleMarkAllRead = async () => {
     const unreadIds = notifications.filter(n => !n.isRead).map(n => n.id);
